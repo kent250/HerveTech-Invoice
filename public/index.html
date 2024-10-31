@@ -1,17 +1,146 @@
+<!DOCTYPE html>
 <html lang="en">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>HERVE TECH LTD :: Invoice Generator</title>
-    <link rel="stylesheet" href="css/style.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .form-title {
+            text-align: center;
+            color: #333;
+        }
+
+        .form-row {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .form-group {
+            flex: 1;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+
+        .buttons-container {
+            margin-top: 20px;
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .btn-primary {
+            background-color: #007bff;
+            color: white;
+        }
+
+        .btn-danger {
+            background-color: #dc3545;
+            color: white;
+        }
+
+        .item-container {
+            border: 1px solid #ddd;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 4px;
+        }
+
+        /* Invoice Preview Styles */
+        #invoicePreview {
+            display: none;
+            margin-top: 20px;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+
+        .invoice-container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .invoice-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        .invoice-table th,
+        .invoice-table td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+
+        .invoice-table th {
+            background-color: #f4f4f4;
+        }
+
+        .total-row {
+            font-weight: bold;
+        }
+        @media print {
+            .invoice-container {
+                width: 210mm;  /* A4 width */
+                padding: 20mm;
+                margin: 0;
+            }
+            
+            .invoice-table {
+                font-size: 12px;
+            }
+        }
+        
+        /* Make sure the preview matches PDF dimensions */
+        #invoicePreview .invoice-container {
+            width: 210mm;
+            margin: 0 auto;
+            background: white;
+            padding: 20mm;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+    </style>
+    <!-- Add jsPDF and html2canvas -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 </head>
 
 <body>
     <div class="container">
         <h1 class="form-title">Item Entry Form</h1>
         <form id="itemForm">
-
             <div class="client-info">
                 <div class="form-row">
                     <div class="form-group">
@@ -30,6 +159,7 @@
             </div>
 
             <div id="itemsContainer"></div>
+
             <div class="client-info">
                 <div class="form-row">
                     <div class="form-group">
@@ -38,11 +168,15 @@
                     </div>
                 </div>
             </div>
+
             <div class="buttons-container">
                 <button type="button" class="btn btn-primary" id="addItemBtn">Add Another Item</button>
                 <button type="submit" class="btn btn-primary">Generate Invoice</button>
             </div>
         </form>
+
+        <!-- Invoice Preview Container -->
+        <div id="invoicePreview"></div>
     </div>
 
     <script>
@@ -94,51 +228,135 @@
                 const id = container.id.split('-')[1];
                 items.push({
                     name: document.getElementById(`name-${id}`).value,
-                    quantity: document.getElementById(`quantity-${id}`).value,
-                    price: document.getElementById(`price-${id}`).value
+                    quantity: Number(document.getElementById(`quantity-${id}`).value),
+                    price: Number(document.getElementById(`price-${id}`).value)
                 });
             });
 
-            const labourAmount = document.getElementById('labourAmount').value;
+            const labourAmount = Number(document.getElementById('labourAmount').value);
 
             return {
                 client: clientData,
                 items: items,
-                labourAmount: Number(labourAmount)
+                labourAmount: labourAmount
             };
+        }
+
+        function generateInvoiceHTML(data) {
+            const date = new Date().toLocaleDateString();
+            let totalAmount = 0;
+            const itemRows = data.items.map((item, index) => {
+                const itemTotal = item.quantity * item.price;
+                totalAmount += itemTotal;
+                return `
+                    <tr>
+                        <td>${index + 1}</td>
+                        <td>${item.name}</td>
+                        <td>${item.quantity}</td>
+                        <td>${item.price} Rwf</td>
+                        <td>${itemTotal} Rwf</td>
+                    </tr>
+                `;
+            }).join('');
+
+            const grandTotal = totalAmount + data.labourAmount;
+
+            return `
+                <div class="invoice-container">
+                    <h1>Proforma Invoice</h1>
+                    <div class="section">
+                        <div class="section-header">Client Details:</div>
+                        <p>Name: ${data.client.name}</p>
+                        <p>Contact: ${data.client.phone}</p>
+                    </div>
+                    <div class="section">
+                        <p>Date: ${date}</p>
+                        <p>Invoice For: ${data.client.invoiceFor}</p>
+                    </div>
+                    <table class="invoice-table">
+                        <thead>
+                            <tr>
+                                <th>NO</th>
+                                <th>ITEM</th>
+                                <th>QTY</th>
+                                <th>PRICE/ITEM</th>
+                                <th>TOTAL</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${itemRows}
+                            <tr class="total-row">
+                                <td colspan="4">Total</td>
+                                <td>${totalAmount} Rwf</td>
+                            </tr>
+                            <tr class="total-row">
+                                <td colspan="4">Labour</td>
+                                <td>${data.labourAmount} Rwf</td>
+                            </tr>
+                            <tr class="total-row">
+                                <td colspan="4">Grand Total</td>
+                                <td>${grandTotal} Rwf</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <div class="section technician-details">
+                        <div class="section-header">Technician Details:</div>
+                        <p>Name: Mugabo Herve</p>
+                        <p>Contact: +250788861535</p>
+                    </div>
+                </div>
+            `;
         }
 
         createItemFields();
 
-
         document.getElementById('addItemBtn').addEventListener('click', createItemFields);
+
         document.getElementById('itemForm').addEventListener('submit', async function (e) {
-                e.preventDefault();
-                const formData = collectFormData();
+            e.preventDefault();
+            const formData = collectFormData();
 
-                try {
-                    const response = await fetch('https://hervetech.onrender.com/generateInvoice', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify(formData)
-                    });
+            // Generate and display invoice preview
+            const invoicePreview = document.getElementById('invoicePreview');
+            invoicePreview.style.display = 'block';
+            invoicePreview.innerHTML = generateInvoiceHTML(formData);
 
-                    // Open the returned HTML in a new window/tab
-                    const invoiceWindow = window.open('', '_blank');
-                    invoiceWindow.document.write(await response.text());
-                    invoiceWindow.document.close();
+            // Generate PDF
+            try {
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF();
 
-                    // clear the form
-                    document.getElementById('itemForm').reset();
-                    document.getElementById('itemsContainer').innerHTML = '';
-                    createItemFields();
-                } catch (error) {
-                    console.error('Error:', error);
-                }
-            });
+                // Use html2canvas to convert the invoice preview to an image
+                const invoice = invoicePreview.querySelector('.invoice-container');
+                const canvas = await html2canvas(invoice, {
+                    scale: 2, // Increase quality
+                    useCORS: true,
+                    logging: false
+                });
 
+                const imgData = canvas.toDataURL('image/jpeg', 1.0);
+
+                // Calculate dimensions
+                const imgProps = doc.getImageProperties(imgData);
+                const pdfWidth = doc.internal.pageSize.getWidth();
+                const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+
+                doc.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight);
+                doc.save('invoice.pdf');
+
+                // Clear form
+                document.getElementById('itemForm').reset();
+                document.getElementById('itemsContainer').innerHTML = '';
+                createItemFields();
+
+                // Hide preview after successful PDF generation
+                invoicePreview.style.display = 'none';
+            } catch (error) {
+                console.error('Error generating PDF:', error);
+                alert('Error generating PDF. Please try again.');
+            }
+        });
     </script>
 </body>
+
 </html>
