@@ -20,7 +20,7 @@ export const formModule = {
                     <input type="number" id="quantity-${itemCount}" required min="1">
                 </div>
                 <div class="form-group">
-                    <label for="price-${itemCount}">Price</label>
+                    <label for="price-${itemCount}">Price/item</label>
                     <input type="number" id="price-${itemCount}" step="0.01" required min="0">
                 </div>
             </div>
