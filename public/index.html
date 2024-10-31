@@ -1,0 +1,144 @@
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HERVE TECH LTD :: Invoice Generator</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body>
+    <div class="container">
+        <h1 class="form-title">Item Entry Form</h1>
+        <form id="itemForm">
+
+            <div class="client-info">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="invoiceFor">Invoice For</label>
+                        <input type="text" id="invoiceFor" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="clientName">Client Name</label>
+                        <input type="text" id="clientName" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="clientPhone">Phone Number</label>
+                        <input type="tel" id="clientPhone" required>
+                    </div>
+                </div>
+            </div>
+
+            <div id="itemsContainer"></div>
+            <div class="client-info">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="labourAmount">Labour Amount</label>
+                        <input type="number" id="labourAmount" required>
+                    </div>
+                </div>
+            </div>
+            <div class="buttons-container">
+                <button type="button" class="btn btn-primary" id="addItemBtn">Add Another Item</button>
+                <button type="submit" class="btn btn-primary">Generate Invoice</button>
+            </div>
+        </form>
+    </div>
+
+    <script>
+        let itemCount = 0;
+
+        function createItemFields() {
+            itemCount++;
+            const itemContainer = document.createElement('div');
+            itemContainer.className = 'item-container';
+            itemContainer.id = `item-${itemCount}`;
+
+            itemContainer.innerHTML = `
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="name-${itemCount}">Item Name</label>
+                        <input type="text" id="name-${itemCount}" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="quantity-${itemCount}">Quantity</label>
+                        <input type="number" id="quantity-${itemCount}" required min="1">
+                    </div>
+                    <div class="form-group">
+                        <label for="price-${itemCount}">Price</label>
+                        <input type="number" id="price-${itemCount}" step="0.01" required min="0">
+                    </div>
+                </div>
+                ${itemCount > 1 ? `<button type="button" class="btn btn-danger" onclick="removeItem(${itemCount})">Remove</button>` : ''}
+            `;
+
+            document.getElementById('itemsContainer').appendChild(itemContainer);
+        }
+
+        function removeItem(id) {
+            const item = document.getElementById(`item-${id}`);
+            item.remove();
+        }
+
+        function collectFormData() {
+            const clientData = {
+                name: document.getElementById('clientName').value,
+                phone: document.getElementById('clientPhone').value,
+                invoiceFor: document.getElementById('invoiceFor').value
+            };
+
+            const items = [];
+            const containers = document.querySelectorAll('.item-container');
+
+            containers.forEach(container => {
+                const id = container.id.split('-')[1];
+                items.push({
+                    name: document.getElementById(`name-${id}`).value,
+                    quantity: document.getElementById(`quantity-${id}`).value,
+                    price: document.getElementById(`price-${id}`).value
+                });
+            });
+
+            const labourAmount = document.getElementById('labourAmount').value;
+
+            return {
+                client: clientData,
+                items: items,
+                labourAmount: Number(labourAmount)
+            };
+        }
+
+        createItemFields();
+
+
+        document.getElementById('addItemBtn').addEventListener('click', createItemFields);
+        document.getElementById('itemForm').addEventListener('submit', async function (e) {
+                e.preventDefault();
+                const formData = collectFormData();
+
+                try {
+                    const response = await fetch('http://localhost:3000/generateInvoice', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(formData)
+                    });
+
+                    // Open the returned HTML in a new window/tab
+                    const invoiceWindow = window.open('', '_blank');
+                    invoiceWindow.document.write(await response.text());
+                    invoiceWindow.document.close();
+
+                    // clear the form
+                    document.getElementById('itemForm').reset();
+                    document.getElementById('itemsContainer').innerHTML = '';
+                    createItemFields();
+                } catch (error) {
+                    console.error('Error:', error);
+                }
+            });
+
+    </script>
+</body>
+</html>
