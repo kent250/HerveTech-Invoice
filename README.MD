@@ -1,6 +1,6 @@
 # Invoice Generator Application
 
-This application was born out of a need to simplify a recurring task. ✨ I frequently created invoices for a place I worked at, and while handling a few invoices a week was manageable, the constant back-and-forth of revisions became quite burdensome. To streamline this process and reduce stress, I decided to develop this app, allowing for a more efficient way to handle invoices and saving everyone time and frustration. ⏱️
+This application was born out of a need to simplify a recurring task. ✨ I frequently created invoices for a friend of mine, and while handling a few invoices a week was manageable, the constant back-and-forth of revisions became quite burdensome. To streamline this process and reduce stress, I decided to develop this app, allowing for a more efficient way to handle invoices and saving everyone time and frustration. ⏱️
 
 ## Features
 
