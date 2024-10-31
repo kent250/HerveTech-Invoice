@@ -24,7 +24,7 @@ This application was born out of a need to simplify a recurring task. ✨ I freq
 1. **Clone the repository:**
 
    ```bash
-   git clone https://github.com/kent250/invoice-generator.git
+   git clone https://github.com/kent250/HerveTech-Invoice.git
    cd invoice-generator
    ```
 
