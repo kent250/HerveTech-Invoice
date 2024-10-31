@@ -103,3 +103,36 @@ input:focus {
     justify-content: space-between;
     margin-top: 20px;
 }
+
+#pdfContainer {
+    position: absolute;
+    left: -9999px;
+    top: -9999px;
+}
+
+.invoice-container {
+    width: 210mm;
+    padding: 20mm;
+    background: white;
+}
+
+.invoice-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+}
+
+.invoice-table th,
+.invoice-table td {
+    border: 1px solid #ddd;
+    padding: 12px;
+    text-align: left;
+}
+
+.invoice-table th {
+    background-color: #f4f4f4;
+}
+
+.total-row {
+    font-weight: bold;
+}
